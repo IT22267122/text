@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Summarization and Analysis</title>
+    <style> 
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #09403e;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: rgb(209, 209, 209);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #386050;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 4px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #737070;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #1f5c2d;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .result h3 {
+            margin: 0;
+            color: #444;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .slider-container {
+            margin: 15px 0;
+        }
+        .info {
+            margin-top: 10px;
+        }
+        .info p {
+            margin: 5px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Text Summarization and Analysis</h1>
+        
+        <textarea id="inputText" placeholder="Enter your text here..."></textarea>
+
+        <!-- Length Slider for Summary -->
+        <div class="slider-container">
+            <label for="summaryLength" class="slider-label">Select Summary Length: </label>
+            <input type="range" id="summaryLength" name="summaryLength" min="1" max="3" step="1" value="2" oninput="updateLengthValue(this.value)">
+            <span id="lengthValue">Medium</span>
+        </div>
+
+        <div class="info">
+            <p>Original Text Length: <span id="originalLength">0</span> characters</p>
+            <p>Summarized Text Length: <span id="summarizedLength">0</span> characters</p>
+        </div>
+
+        <div class="buttons">
+            <button onclick="summarizeText()">Summarize</button>
+            <button onclick="analyzeSentiment()">Analyze Sentiment</button>
+            <button onclick="extractKeywords()">Keywords</button>
+            <button onclick="topicModeling()">Topic Modeling</button>
+        </div>
+
+        <div class="container">
+            <div class="result" id="result">
+                <h3>Summarizer Result...</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:5000'; // Base URL for Flask API
+
+        // Function to display result in the HTML
+        function displayResult(data) {
+            document.getElementById('result').innerHTML = `
+                <h3>Result:</h3>
+                <div>
+                    ${JSON.stringify(data, null, 2)}
+                </div>
+            `;
+             // Update summarized text length
+             document.getElementById('summarizedLength').textContent = data.summary.length || 0;
+        }
+
+        // Update the slider value and display Short, Medium, or Long
+        function updateLengthValue(value) {
+            let category = 'Medium';
+
+            if (value === "1") {
+                category = 'Short';
+            } else if (value === "2") {
+                category = 'Medium';
+            } else if (value === "3") {
+                category = 'Long';
+            }
+
+            document.getElementById('lengthValue').textContent = category;
+        }
+
+        // Function to send POST request for Summarization with selected length
+        async function summarizeText() {
+            const text = document.getElementById('inputText').value;
+            const lengthCategory = document.getElementById('summaryLength').value; // Get the selected length category
+
+            if (text.trim() === "") {
+                alert("Please enter some text!");
+                return;
+            }
+
+            // Update the original text length
+            document.getElementById('originalLength').textContent = text.length;
+
+            let maxLength;
+            if (lengthCategory === "1") {
+                maxLength = 50; // Short
+            } else if (lengthCategory === "2") {
+                maxLength = 150; // Medium
+            } else if (lengthCategory === "3") {
+                maxLength = 300; // Long
+            }
+
+            const response = await fetch(`${apiUrl}/summarize`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text, max_length: maxLength })
+            });
+
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        // Function to send POST request for Sentiment Analysis
+        async function analyzeSentiment() {
+            const text = document.getElementById('inputText').value;
+            if (text.trim() === "") {
+                alert("Please enter some text!");
+                return;
+            }
+
+            const response = await fetch(`${apiUrl}/sentiment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        // Function to send POST request for Keyword Extraction
+        async function extractKeywords() {
+            const text = document.getElementById('inputText').value;
+            if (text.trim() === "") {
+                alert("Please enter some text!");
+                return;
+            }
+
+            const response = await fetch(`${apiUrl}/keywords`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        // Function to send POST request for Topic Modeling
+        async function topicModeling() {
+            const text = document.getElementById('inputText')
+        }
